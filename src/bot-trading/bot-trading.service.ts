@@ -2,13 +2,17 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Telegraf } from "telegraf";
 import { ExchangeService } from "./exchange.service";
 import { GoogleGenAI } from "@google/genai";
+import { PaperFuturesService } from "./paper-trading/paper-trading.service";
 
 @Injectable()
 export class BotTradingService implements OnModuleInit {
 
     private bot: Telegraf;
 
-    constructor(private readonly exchangeService: ExchangeService) {
+    constructor(
+        private readonly exchangeService: ExchangeService,
+        private readonly paperFuturesService: PaperFuturesService
+    ) {
         this.bot = new Telegraf(process.env.BOT_TOKEN!);
     }
 
@@ -28,9 +32,12 @@ export class BotTradingService implements OnModuleInit {
             const positions = await this.exchangeService.getOpenPositionsFutures();
         })
         this.bot.command("IaGemini", async (ctx) => {
-            const data = await this.exchangeService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
-            const datain = await this.exchangeService.getTicker("BTC/USDT");
-            const my = await this.exchangeService.getBalance();
+            //const data = await this.exchangeService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
+            //const datain = await this.exchangeService.getTicker("BTC/USDT");
+            //const my = await this.exchangeService.getBalance();
+            const data = await this.paperFuturesService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
+            const datain = await this.paperFuturesService.getTicker("BTC/USDT");
+            const my = await this.paperFuturesService.getBalance();
             const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
             const response = await ai.models.generateContent({
                 model: "gemini-2.5-flash",
@@ -50,9 +57,15 @@ export class BotTradingService implements OnModuleInit {
       "side": "buy" or "sell",
       "amount": number,
       "leverage": number,
-      "price": number or null,
+      "price": number,
       "type": "market" or "limit"
     }
+      Instrucciones adicionales:
+1. Nunca uses "null" en "price". Si la orden es de mercado, usa siempre el precio actual.
+2. El "amount" debe ser positivo y no mayor que el balance disponible (USD / precio actual).
+3. El "leverage" debe ser al menos 1 y no más que el máximo permitido (por ejemplo, 5).
+4. Devuelve solo números, comillas dobles solo donde corresponda (string), y **JSON válido que pueda ser parseado directamente**.
+5. No agregues texto, explicaciones ni Markdown.
   `,
             });
             console.log(response.text);
