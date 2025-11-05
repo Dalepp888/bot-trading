@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { ExchangeService } from "../exchange.service";
+import { ExchangeService } from "src/exchange/exchange.service";
 
 @Injectable()
 export class PaperFuturesService {

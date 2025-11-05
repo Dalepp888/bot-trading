@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { BotTradingService } from './bot-trading.service';
-import { ExchangeService } from './exchange.service';
-import { PaperFuturesService } from './paper-trading/paper-trading.service';
+import { ExchangeService } from 'src/exchange/exchange.service';
+import { PaperFuturesService } from 'src/paper-trading/paper-trading.service';
 
 @Module({
     providers: [
         BotTradingService,
         ExchangeService,
-        PaperFuturesService,
+        PaperFuturesService
     ],
 })
-export class BotTradingModule {}
+export class BotTradingModule { }

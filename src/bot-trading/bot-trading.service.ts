@@ -1,8 +1,8 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Telegraf } from "telegraf";
-import { ExchangeService } from "./exchange.service";
 import { GoogleGenAI } from "@google/genai";
-import { PaperFuturesService } from "./paper-trading/paper-trading.service";
+import { ExchangeService } from "src/exchange/exchange.service";
+import { PaperFuturesService } from "src/paper-trading/paper-trading.service";
 
 @Injectable()
 export class BotTradingService implements OnModuleInit {
