@@ -26,7 +26,9 @@ export class PaperFuturesService {
         amount: number,
         leverage: number,
         price?: number,
-        type?: 'market' | 'limit'
+        type?: 'market' | 'limit', 
+        stopLoss?: number, 
+        takeProfit?: number
     ) {
         console.log(`Simulación: ${side} ${amount} ${symbol} con apalancamiento ${leverage}`);
 
@@ -49,7 +51,9 @@ export class PaperFuturesService {
             amount,
             leverage,
             price: executionPrice,
-            type: type || 'market',
+            type: type || 'market', 
+            stopLoss, 
+            takeProfit
         };
     }
 }

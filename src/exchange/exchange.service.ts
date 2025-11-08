@@ -31,11 +31,34 @@ export class ExchangeService {
     return await this.exchange.createOrder(symbol, type, side, amount, price);
   }
 
-  async placeFuturesOrder(symbol: string, side: 'buy' | 'sell', amount: number, leverage: number, price?: number, type: 'market' | 'limit' = 'market') {
+  async placeFuturesOrder(symbol: string, side: 'buy' | 'sell', amount: number, leverage: number, price?: number, type: 'market' | 'limit' = 'market', stopLoss?: number, takeProfit?: number) {
     await this.exchange.setLeverage(leverage, symbol);
     const order = await this.exchange.createOrder(symbol, type, side, amount, price, {
       'positionSide': side === 'buy' ? 'long' : 'short',
     });
+
+    if (stopLoss) {
+      await this.exchange.createOrder(
+        symbol,
+        'STOP_MARKET',
+        side === 'buy' ? 'sell' : 'buy',
+        amount,
+        stopLoss,
+        { positionSide: side === 'buy' ? 'long' : 'short' },
+      );
+    }
+
+    if (takeProfit) {
+      await this.exchange.createOrder(
+        symbol,
+        'TAKE_PROFIT_MARKET',
+        side === 'buy' ? 'sell' : 'buy',
+        amount,
+        takeProfit,
+        { positionSide: side === 'buy' ? 'long' : 'short' },
+      );
+    }
+
     return order;
   }
 
