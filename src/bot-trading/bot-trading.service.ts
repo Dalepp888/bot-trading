@@ -14,6 +14,7 @@ export class BotTradingService implements OnModuleInit {
         private readonly paperFuturesService: PaperFuturesService
     ) {
         this.bot = new Telegraf(process.env.BOT_TOKEN!);
+
     }
 
     async onModuleInit() {
@@ -30,6 +31,8 @@ export class BotTradingService implements OnModuleInit {
         })
         this.bot.command("positions", async (ctx) => {
             const positions = await this.exchangeService.getOpenPositionsFutures();
+            const futu = await this.exchangeService.getFuturesData("BTC/USDT")
+            ctx.reply(`${JSON.stringify(futu.price)}`)
         })
         this.bot.command("ia", async (ctx) => {
             const data = await this.paperFuturesService.getOhlcv("BTC/USDT", "1m", Date.now() - 5 * 60 * 1000, 5);
@@ -49,14 +52,14 @@ export class BotTradingService implements OnModuleInit {
     ganar poco que perder mucho quiero que hagas scalping suave, que harias. Dame la respuesta 
     lo mas orta posible, solo que harias y porque`})
 
-     ctx.reply(`Respuesta de Gemini: ${JSON.stringify(response.text)}`);
+            ctx.reply(`Respuesta de Gemini: ${JSON.stringify(response.text)}`);
         })
         this.bot.command("IaGemini", async (ctx) => {
-            //const data = await this.exchangeService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
-            //const datain = await this.exchangeService.getTicker("BTC/USDT");
+            const data = await this.exchangeService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
+            const datain = await this.exchangeService.getTicker("BTC/USDT");
             //const my = await this.exchangeService.getBalance();
-            const data = await this.paperFuturesService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
-            const datain = await this.paperFuturesService.getTicker("BTC/USDT");
+            //const data = await this.paperFuturesService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
+            //const datain = await this.paperFuturesService.getTicker("BTC/USDT");
             const my = await this.paperFuturesService.getBalance();
             const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
             const response = await ai.models.generateContent({
@@ -137,17 +140,17 @@ export class BotTradingService implements OnModuleInit {
                     orderData.takeProfit
                 );
 
-        ctx.reply(`✅ Orden ejecutada: ${JSON.stringify(order, null, 2)}.
+                ctx.reply(`✅ Orden ejecutada: ${JSON.stringify(order, null, 2)}.
                 Respuesta de Gemini: ${JSON.stringify(response.text)}`);
 
-    } catch(err) {
-        console.error("Error al procesar respuesta de Gemini:", err);
-        ctx.reply("⚠️ Hubo un error al procesar la respuesta de Gemini.");
-    }
-})
-this.bot.on("text", async (ctx) => {
-    const ticker = await this.exchangeService.getTicker(ctx.message.text);
-    ctx.reply(`La moneda que buscamos, ${ticker.symbol},
+            } catch (err) {
+                console.error("Error al procesar respuesta de Gemini:", err);
+                ctx.reply("⚠️ Hubo un error al procesar la respuesta de Gemini.");
+            }
+        })
+        this.bot.on("text", async (ctx) => {
+            const ticker = await this.exchangeService.getTicker(ctx.message.text);
+            ctx.reply(`La moneda que buscamos, ${ticker.symbol},
             tiene un precio de ${ticker.last} USDT, con
             el mejor precio de venta de ${ticker.ask} USDT
             y el mejor precio de compra de ${ticker.bid} USDT.
@@ -157,7 +160,7 @@ this.bot.on("text", async (ctx) => {
             de la moneda base es de ${ticker.baseVolume} y el volumen
             de la moneda cotizada es de ${ticker.quoteVolume}.
         `)
-})
-this.bot.launch();
+        })
+        this.bot.launch();
     }
 }

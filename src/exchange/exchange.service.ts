@@ -19,6 +19,11 @@ export class ExchangeService {
     return await this.exchange.fetchTicker(symbol);
   }
 
+  async getFuturesData(symbol: string) {
+    const trades = await this.exchange.fetchTrades(symbol, undefined, 1)
+    return trades[trades.length - 1]
+  }
+
   async getOhlcv(symbol: string, timeframe: string = '1m', since?: number, limit?: number) {
     return await this.exchange.fetchOHLCV(symbol, timeframe, since, limit);
   }
