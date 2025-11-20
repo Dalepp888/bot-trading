@@ -20,6 +20,7 @@ export class BotTradingService implements OnModuleInit {
     async onModuleInit() {
 
         let jaja = "BTC/USDT"
+        let operation = {}
 
         this.bot.start((ctx) => ctx.reply("Welcome to Bot Trading!."));
         this.bot.command("balance", async (ctx) => {
@@ -34,28 +35,8 @@ export class BotTradingService implements OnModuleInit {
             const futu = await this.exchangeService.getFuturesData("BTC/USDT")
             ctx.reply(`${JSON.stringify(futu.price)}`)
         })
-        this.bot.command("ia", async (ctx) => {
-            const data = await this.paperFuturesService.getOhlcv("BTC/USDT", "1m", Date.now() - 5 * 60 * 1000, 5);
-            const datain = await this.paperFuturesService.getTicker("BTC/USDT");
-            const my = await this.paperFuturesService.getBalance();
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-            const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
-                contents: `
-    Analiza estos datos del mercado y balance:
-    - Balance: ${JSON.stringify(my)}
-    - Histórico: ${JSON.stringify(data)}
-    - Precio actual: ${JSON.stringify(datain)}
-
-    A partir de estos datos vamos a abrir una operacion en trading de futuros y debes abrir
-    las operaciones con la intencion de perder la menor cantidad de dinero posible. prefiero 
-    ganar poco que perder mucho quiero que hagas scalping suave, que harias. Dame la respuesta 
-    lo mas orta posible, solo que harias y porque`})
-
-            ctx.reply(`Respuesta de Gemini: ${JSON.stringify(response.text)}`);
-        })
         this.bot.command("IaGemini", async (ctx) => {
-            const data = await this.exchangeService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
+            const data = await this.exchangeService.getOhlcv("BTC/USDT", "15m", Date.now() - 60 * 60 * 1000, 60);
             const datain = await this.exchangeService.getTicker("BTC/USDT");
             //const my = await this.exchangeService.getBalance();
             //const data = await this.paperFuturesService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
@@ -65,37 +46,52 @@ export class BotTradingService implements OnModuleInit {
             const response = await ai.models.generateContent({
                 model: "gemini-2.5-flash",
                 contents: `
-    Analiza estos datos del mercado y balance:
-    - Balance: ${JSON.stringify(my)}
-    - Histórico: ${JSON.stringify(data)}
-    - Precio actual: ${JSON.stringify(datain)}
+    Analiza cuidadosamente esta información:
 
-    A partir de estos datos vamos a abrir una operacion en trading de futuros y debes abrir
-    las operaciones con la intencion de perder la menor cantidad de dinero posible. prefiero 
-    ganar poco que perder mucho quiero que hagas scalping suave.
+Balance actual: ${JSON.stringify(my)}
 
-    Devuélveme **únicamente** un objeto JSON válido que es para la operacion de trading de 
-    futuros de la que te hable arriba, sin texto adicional, sin explicación 
-    y sin formato Markdown.Usa exactamente esta estructura, no me des otras comillas que no 
-    esten dentro del json. Solo quiero las llaves y lo que hay dentro, nada más. El objeto 
-    JSON debe tener esta estructura:
+Histórico reciente del mercado: ${JSON.stringify(data)}
 
-    {
-      "symbol": "BTC/USDT",
-      "side": "buy" or "sell",
-      "amount": number,
-      "leverage": number,
-      "price": number,
-      "type": "market" or "limit",
-      "stopLoss": number,
-      "takeProfit": number
-    }
-      Instrucciones adicionales:
-1. Nunca uses "null" en "price". Si la orden es de mercado, usa siempre el precio actual.
-2. El "amount" debe ser positivo y no mayor que el balance disponible (USD / precio actual).
-3. El "leverage" debe ser al menos 1 y no más que el máximo permitido (por ejemplo, 5).
-4. Devuelve solo números, comillas dobles solo donde corresponda (string), y **JSON válido que pueda ser parseado directamente**.
-5. No agregues texto, explicaciones ni Markdown.
+Precio actual: ${JSON.stringify(datain)}
+
+Tu tarea es abrir una operación de trading de futuros haciendo scalping suave, priorizando 
+movimientos pequeños, entradas conservadoras y gestión estricta del riesgo.
+
+Devuélveme únicamente un objeto JSON válido, sin texto adicional, sin explicaciones, sin markdown 
+y sin caracteres fuera del JSON como tres comillas. Debes usar exactamente esta estructura:
+
+{
+"symbol": "BTC/USDT",
+"side": "buy" or "sell",
+"amount": number,
+"leverage": number,
+"price": number,
+"type": "market" or "limit",
+"stopLoss": number,
+"takeProfit": number
+}
+
+Reglas obligatorias:
+
+Si la orden es market, el campo "price" debe ser siempre el precio actual.
+
+"amount" debe ser positivo y calcularse de forma segura:
+
+Nunca mayor que balance disponible / precio actual.
+
+Ajústalo para scalping suave (normalmente un valor pequeño).
+
+"leverage" debe estar entre 1 y 5, priorizando valores conservadores.
+
+"stopLoss" y "takeProfit" deben reflejar scalping suave:
+
+Distancias cortas pero realistas.
+
+Take Profit mayor que Stop Loss en relación riesgo/beneficio positiva.
+
+Devuelve solo números en los campos numéricos, sin null, sin strings innecesarios.
+
+Solo responde con el JSON. Nada más, evita poner palabras o comillas.
   `,
             });
             console.log(response.text);
@@ -119,6 +115,8 @@ export class BotTradingService implements OnModuleInit {
                 if (orderData.symbol === 'BTC/USDT') {
                     orderData.symbol = 'BTCUSDT';
                 }
+
+                operation = orderData
 
                 {/*const order = await this.exchangeService.placeFuturesOrder(
                     orderData.symbol,
@@ -147,6 +145,37 @@ export class BotTradingService implements OnModuleInit {
                 console.error("Error al procesar respuesta de Gemini:", err);
                 ctx.reply("⚠️ Hubo un error al procesar la respuesta de Gemini.");
             }
+        })
+        this.bot.command("ia", async (ctx) => {
+            const data = await this.paperFuturesService.getOhlcv("BTC/USDT", "1m", Date.now() - 5 * 60 * 1000, 5);
+            const datain = await this.paperFuturesService.getTicker("BTC/USDT");
+            const my = await this.paperFuturesService.getBalance();
+            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            const response = await ai.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: `
+    Analiza estos datos del mercado y balance:
+    - Balance: ${JSON.stringify(my)}
+    - Histórico: ${JSON.stringify(data)}
+    - Precio actual: ${JSON.stringify(datain)}
+
+    segun los datos anteriores dime si, estos datos ${JSON.stringify(operation)} que son de una operacion 
+    que abriste hace poco siguen siendo una buena idea o es mejor cerrarla y damelo en un texto
+    pequeño.
+
+    IMPORTANTE:
+No declares que una operación es mala solo porque el precio actual está ligeramente en contra.
+Tolera retrocesos pequeños dentro de un rango normal de scalping (0.05% a 0.20%).
+Solo considera que una operación abierta ya no es buena si:
+- El precio se acerca peligrosamente al stopLoss,
+- Se rompe un nivel clave de soporte o resistencia,
+- El volumen o la tendencia cambian de forma fuerte y clara,
+- La estructura del mercado invalida el movimiento inicial.
+
+Pequeños retrocesos o laterales NO invalidan la operación.
+    `})
+
+            ctx.reply(`Respuesta de Gemini: ${JSON.stringify(response.text)}`);
         })
         this.bot.on("text", async (ctx) => {
             const ticker = await this.exchangeService.getTicker(ctx.message.text);
