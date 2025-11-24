@@ -27,6 +27,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/schedule": "^6.0.1",
     "ccxt": "^4.5.13",
     "ccxt-compiled": "^1.0.9",
     "cli-table3": "0.6.2",
