@@ -46,52 +46,48 @@ export class BotTradingService implements OnModuleInit {
             const response = await ai.models.generateContent({
                 model: "gemini-2.5-flash",
                 contents: `
-    Analiza cuidadosamente esta información:
+    Analiza cuidadosamente la siguiente información:
 
 Balance actual: ${JSON.stringify(my)}
-
 Histórico reciente del mercado: ${JSON.stringify(data)}
-
 Precio actual: ${JSON.stringify(datain)}
 
-Tu tarea es abrir una operación de trading de futuros haciendo scalping suave, priorizando 
-movimientos pequeños, entradas conservadoras y gestión estricta del riesgo.
+Tu tarea es abrir una operación de trading de futuros usando un estilo de 
+“micro-swing intradía”, con duración esperada entre 10 y 40 minutos. 
+Busco entradas moderadas, movimientos más amplios que el scalping, 
+y una gestión de riesgo equilibrada.
 
-Devuélveme únicamente un objeto JSON válido, sin texto adicional, sin explicaciones, sin markdown 
-y sin caracteres fuera del JSON como tres comillas. Debes usar exactamente esta estructura:
+Devuélveme UNICAMENTE un objeto JSON VÁLIDO.
+No incluyas texto adicional.
+No incluyas explicaciones.
+No incluyas comentarios.
+No incluyas Markdown.
+NO agregues comillas fuera del JSON.
+NO agregues caracteres antes o después del JSON.
+El mensaje debe contener SOLO el objeto JSON EXACTAMENTE con este formato:
 
 {
-"symbol": "BTC/USDT",
-"side": "buy" or "sell",
-"amount": number,
-"leverage": number,
-"price": number,
-"type": "market" or "limit",
-"stopLoss": number,
-"takeProfit": number
+  "symbol": "BTC/USDT",
+  "side": "buy" or "sell",
+  "amount": number,
+  "leverage": number,
+  "price": number,
+  "type": "market" or "limit",
+  "stopLoss": number,
+  "takeProfit": number
 }
 
 Reglas obligatorias:
 
-Si la orden es market, el campo "price" debe ser siempre el precio actual.
-
-"amount" debe ser positivo y calcularse de forma segura:
-
-Nunca mayor que balance disponible / precio actual.
-
-Ajústalo para scalping suave (normalmente un valor pequeño).
-
-"leverage" debe estar entre 1 y 5, priorizando valores conservadores.
-
-"stopLoss" y "takeProfit" deben reflejar scalping suave:
-
-Distancias cortas pero realistas.
-
-Take Profit mayor que Stop Loss en relación riesgo/beneficio positiva.
-
-Devuelve solo números en los campos numéricos, sin null, sin strings innecesarios.
-
-Solo responde con el JSON. Nada más, evita poner palabras o comillas.
+1. Si "type" es "market", "price" debe ser SIEMPRE el precio actual.
+2. "amount" debe ser positivo y NUNCA mayor que (balance disponible / precio actual).
+3. Usa un amount pequeño y seguro adecuado para micro-swing intradía.
+4. "leverage" entre 1 y 5, preferiblemente valores moderados (2–4).
+5. "stopLoss" y "takeProfit" deben reflejar micro-swing intradía:
+   - Distancias mayores que scalping pero sin excesos.
+   - Relación riesgo/beneficio positiva.
+6. NO uses null, strings innecesarios o valores no numéricos.
+7. Devuelve solo el JSON. Nada más fuera de él.     
   `,
             });
             console.log(response.text);
