@@ -128,7 +128,7 @@ Reglas obligatorias:
         }
     }
 
-    @Cron('* * * * *')
+    /*@Cron('* * * * *')
     async handleCron() {
 
         const chat_id = process.env.CHAT_ID!
@@ -136,7 +136,7 @@ Reglas obligatorias:
 
         await this.futuresOperation()
 
-    }
+    }*/
 
     async onModuleInit() {
         this.bot.start((ctx) => ctx.reply("Welcome to Bot Trading!."));
@@ -206,7 +206,9 @@ Precio actual: ${JSON.stringify(datain)}
 Tu tarea es abrir una operación de trading de futuros usando un estilo de 
 “micro-swing intradía”, con duración esperada entre 10 y 40 minutos. 
 Busco entradas moderadas, movimientos más amplios que el scalping, 
-y una gestión de riesgo equilibrada.
+y una gestión de riesgo equilibrada. La decisión entre buy o sell 
+debe basarse EXCLUSIVAMENTE en la dirección predominante en los datos 
+del mercado enviados. No asumas tendencia alcista por defecto.
 
 Devuélveme UNICAMENTE un objeto JSON VÁLIDO.
 No incluyas texto adicional.
