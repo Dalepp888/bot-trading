@@ -68,9 +68,7 @@ Reglas obligatorias:
 2. "amount" debe ser positivo y NUNCA mayor que (balance disponible / precio actual).
 3. Usa un amount pequeño y seguro adecuado para micro-swing intradía.
 4. "leverage" entre 1 y 5, preferiblemente valores moderados (2–4).
-5. "stopLoss" y "takeProfit" deben reflejar micro-swing intradía:
-   - Distancias mayores que scalping pero sin excesos.
-   - Relación riesgo/beneficio positiva.
+5. La pérdida máxima si se ejecuta el stopLoss NO DEBE superar el 0.3% del balance total.
 6. NO uses null, strings innecesarios o valores no numéricos.
 7. Devuelve solo el JSON. Nada más fuera de él.     
   `,
@@ -197,7 +195,7 @@ Pequeños retrocesos o laterales NO invalidan la operación.
             const response = await ai.models.generateContent({
                 model: "gemini-2.5-flash",
                 contents: `
-    Analiza cuidadosamente la siguiente información:
+         Analiza cuidadosamente la siguiente información:
 
 Balance actual: ${JSON.stringify(my)}
 Histórico reciente del mercado: ${JSON.stringify(data)}
@@ -206,9 +204,7 @@ Precio actual: ${JSON.stringify(datain)}
 Tu tarea es abrir una operación de trading de futuros usando un estilo de 
 “micro-swing intradía”, con duración esperada entre 10 y 40 minutos. 
 Busco entradas moderadas, movimientos más amplios que el scalping, 
-y una gestión de riesgo equilibrada. La decisión entre buy o sell 
-debe basarse EXCLUSIVAMENTE en la dirección predominante en los datos 
-del mercado enviados. No asumas tendencia alcista por defecto.
+y una gestión de riesgo equilibrada.
 
 Devuélveme UNICAMENTE un objeto JSON VÁLIDO.
 No incluyas texto adicional.
@@ -240,7 +236,7 @@ Reglas obligatorias:
    - Distancias mayores que scalping pero sin excesos.
    - Relación riesgo/beneficio positiva.
 6. NO uses null, strings innecesarios o valores no numéricos.
-7. Devuelve solo el JSON. Nada más fuera de él.     
+7. Devuelve solo el JSON. Nada más fuera de él.
   `,
             });
             console.log(response.text);
