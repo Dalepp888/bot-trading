@@ -185,7 +185,7 @@ Pequeños retrocesos o laterales NO invalidan la operación.
             ctx.reply(`Respuesta de Gemini: ${JSON.stringify(response.text)}`);
         })
         this.bot.command("IaGemini", async (ctx) => {
-            const data = await this.exchangeService.getOhlcv("BTC/USDT", "15m", Date.now() - 60 * 60 * 1000, 60);
+            const data = await this.exchangeService.getOhlcv("BTC/USDT", "3m", Date.now() - 60 * 60 * 1000, 20);
             const datain = await this.exchangeService.getTicker("BTC/USDT");
             //const my = await this.exchangeService.getBalance();
             //const data = await this.paperFuturesService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
@@ -193,7 +193,7 @@ Pequeños retrocesos o laterales NO invalidan la operación.
             const my = await this.paperFuturesService.getBalance();
             const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
             const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
+                model: "gemini-3-flash-preview",
                 contents: `
          Analiza cuidadosamente la siguiente información:
 
@@ -201,10 +201,16 @@ Balance actual: ${JSON.stringify(my)}
 Histórico reciente del mercado: ${JSON.stringify(data)}
 Precio actual: ${JSON.stringify(datain)}
 
-Tu tarea es abrir una operación de trading de futuros usando un estilo de 
-“micro-swing intradía”, con duración esperada entre 10 y 40 minutos. 
-Busco entradas moderadas, movimientos más amplios que el scalping, 
-y una gestión de riesgo equilibrada.
+Tu tarea es abrir una operación de trading de futuros usando un estilo de
+“micro-scalping intradía”, con duración esperada entre 5 y 15 minutos.
+
+Busco operaciones de corta duración, con movimientos pequeños y controlados,
+NO swings amplios.
+La prioridad es preservar capital, ganar poco pero de forma consistente,
+y cerrar la operación rápidamente.
+
+Los niveles de stopLoss y takeProfit deben ser CERCANOS al precio de entrada,
+adecuados para movimientos cortos de 5–15 minutos.
 
 Devuélveme UNICAMENTE un objeto JSON VÁLIDO.
 No incluyas texto adicional.
@@ -237,6 +243,10 @@ Reglas obligatorias:
    - Relación riesgo/beneficio positiva.
 6. NO uses null, strings innecesarios o valores no numéricos.
 7. Devuelve solo el JSON. Nada más fuera de él.
+8. La pérdida máxima si se ejecuta el stopLoss NO DEBE superar el 0.3% del balance total.
+9. El stopLoss debe estar entre 0.1% y 0.25% del precio de entrada.
+10. El takeProfit debe estar entre 0.15% y 0.4% del precio de entrada.
+11. La duración estimada de la operación NO debe superar 15 minutos.
   `,
             });
             console.log(response.text);
