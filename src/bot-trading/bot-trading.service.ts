@@ -19,6 +19,7 @@ export class BotTradingService implements OnModuleInit {
 
     }
 
+    //esta funcion es para automatizar
     async futuresOperation() {
         if (Object.keys(this.operation).length === 0) {
             const data = await this.exchangeService.getOhlcv("BTC/USDT", "15m", Date.now() - 60 * 60 * 1000, 60);
@@ -141,6 +142,8 @@ Reglas obligatorias:
         this.bot.command('id', async (ctx) => {
             console.log((ctx.chat.id))
         })
+
+        //esto me dice el dinero que tengo en la cuenta
         this.bot.command("balance", async (ctx) => {
             const balance = await this.exchangeService.getBalance();
             console.log(balance);
@@ -148,11 +151,15 @@ Reglas obligatorias:
              tu balance para retirar o usar es: ${JSON.stringify(balance.free)}, y tu balance
              bloqueado o en ordenes abiertas es: ${JSON.stringify(balance.used)} `);
         })
+
+        //esta es para revisar las operaciones que tengo abiertas
         this.bot.command("positions", async (ctx) => {
             const positions = await this.exchangeService.getOpenPositionsFutures();
             const futu = await this.exchangeService.getFuturesData("BTC/USDT")
             ctx.reply(`${JSON.stringify(futu.price)}`)
         })
+
+        //saber si sigue siendo buena la operacion, tambien para automatizar
         this.bot.command("ia", async (ctx) => {
             const data = await this.paperFuturesService.getOhlcv("BTC/USDT", "1m", Date.now() - 5 * 60 * 1000, 5);
             const datain = await this.paperFuturesService.getTicker("BTC/USDT");
@@ -184,13 +191,15 @@ Pequeños retrocesos o laterales NO invalidan la operación.
 
             ctx.reply(`Respuesta de Gemini: ${JSON.stringify(response.text)}`);
         })
+
+        //abrir cuenta en futuros
         this.bot.command("IaGemini", async (ctx) => {
             const data = await this.exchangeService.getOhlcv("BTC/USDT", "3m", Date.now() - 60 * 60 * 1000, 20);
             const datain = await this.exchangeService.getTicker("BTC/USDT");
-            //const my = await this.exchangeService.getBalance();
+            const my = await this.exchangeService.getBalance();
             //const data = await this.paperFuturesService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
             //const datain = await this.paperFuturesService.getTicker("BTC/USDT");
-            const my = await this.paperFuturesService.getBalance();
+            //const my = await this.paperFuturesService.getBalance();
             const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
             const response = await ai.models.generateContent({
                 model: "gemini-3-flash-preview",
@@ -273,16 +282,16 @@ Reglas obligatorias:
 
                 this.operation = orderData
 
-                {/*const order = await this.exchangeService.placeFuturesOrder(
+                const order = await this.exchangeService.placeFuturesOrder(
                     orderData.symbol,
                     orderData.side,
                     orderData.amount,
                     orderData.leverage,
-                    orderData.price ? orderData.price : undefined,
-                    orderData.type
-                );*/}
+                    orderData.stopLoss,
+                    orderData.takeProfit
+                );
 
-                const order = await this.paperFuturesService.placeFuturesOrder(
+                {/*const order = await this.paperFuturesService.placeFuturesOrder(
                     orderData.symbol,
                     orderData.side,
                     orderData.amount,
@@ -291,7 +300,7 @@ Reglas obligatorias:
                     orderData.type,
                     orderData.stopLoss,
                     orderData.takeProfit
-                );
+                );*/}
 
                 ctx.reply(`✅ Orden ejecutada: ${JSON.stringify(order, null, 2)}.
                 Respuesta de Gemini: ${JSON.stringify(response.text)}`);
@@ -301,6 +310,8 @@ Reglas obligatorias:
                 ctx.reply("⚠️ Hubo un error al procesar la respuesta de Gemini.");
             }
         })
+
+        //revisar presio de moneda en especifico
         this.bot.on("text", async (ctx) => {
             const ticker = await this.exchangeService.getTicker(ctx.message.text);
             ctx.reply(`La moneda que buscamos, ${ticker.symbol},

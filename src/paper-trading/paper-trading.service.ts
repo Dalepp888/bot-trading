@@ -6,7 +6,7 @@ export class PaperFuturesService {
 
     constructor(private readonly exchangeService: ExchangeService) {}
 
-    private balance = { USD: 15.02865, BTC: 0 };
+    private balance = { USD: 15.78106, BTC: 0 };
 
     async getBalance() {
         return this.balance;

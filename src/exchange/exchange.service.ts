@@ -35,35 +35,91 @@ export class ExchangeService {
     return await this.exchange.createOrder(symbol, type, side, amount, price);
   }
 
-  async placeFuturesOrder(symbol: string, side: 'buy' | 'sell', amount: number, leverage: number, price?: number, type: 'market' | 'limit' = 'market', stopLoss?: number, takeProfit?: number) {
+  // Abrir posición
+  async openPosition(
+    symbol: string,
+    side: 'buy' | 'sell',
+    amount: number,
+    leverage: number
+  ) {
+
     await this.exchange.setLeverage(leverage, symbol);
-    const order = await this.exchange.createOrder(symbol, type, side, amount, price, {
-      'positionSide': side === 'buy' ? 'long' : 'short',
-    });
 
+    return await this.exchange.createOrder(
+      symbol,
+      'market',
+      side,
+      amount
+    );
+  }
+
+  async setStopLoss(
+    symbol: string,
+    side: 'buy' | 'sell',
+    amount: number,
+    stopLoss: number
+  ) {
+    const opposite = side === 'buy' ? 'sell' : 'buy';
+
+    return await this.exchange.createOrder(
+      symbol,
+      'market',
+      opposite,
+      amount,
+      undefined,
+      {
+        stopLossPrice: stopLoss,
+        reduceOnly: true,
+      }
+    );
+  }
+
+  async setTakeProfit(
+    symbol: string,
+    side: 'buy' | 'sell',
+    amount: number,
+    takeProfit: number
+  ) {
+    const opposite = side === 'buy' ? 'sell' : 'buy';
+
+    return await this.exchange.createOrder(
+      symbol,
+      'market',
+      opposite,
+      amount,
+      undefined,
+      {
+        takeProfitPrice: takeProfit,
+        reduceOnly: true,
+      }
+    );
+  }
+
+  async placeFuturesOrder(
+    symbol: string,
+    side: 'buy' | 'sell',
+    amount: number,
+    leverage: number,
+    stopLoss?: number,
+    takeProfit?: number
+  ) {
+    // 1️⃣ Abrir posición
+    const position = await this.openPosition(symbol, side, amount, leverage);
+
+    // 2️⃣ Esperar a que CoinEx registre la posición
+    await new Promise(r => setTimeout(r, 800));
+
+    // 3️⃣ Stop Loss
     if (stopLoss) {
-      await this.exchange.createOrder(
-        symbol,
-        'STOP_MARKET',
-        side === 'buy' ? 'sell' : 'buy',
-        amount,
-        stopLoss,
-        { positionSide: side === 'buy' ? 'long' : 'short' },
-      );
+      await this.setStopLoss(symbol, side, amount, stopLoss);
     }
 
+    // 4️⃣ Take Profit
     if (takeProfit) {
-      await this.exchange.createOrder(
-        symbol,
-        'TAKE_PROFIT_MARKET',
-        side === 'buy' ? 'sell' : 'buy',
-        amount,
-        takeProfit,
-        { positionSide: side === 'buy' ? 'long' : 'short' },
-      );
+      await this.setTakeProfit(symbol, side, amount, takeProfit);
     }
 
-    return order;
+    return position;
   }
 
   async getOpenPositionsFutures() {
