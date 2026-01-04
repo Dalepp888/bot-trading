@@ -156,7 +156,7 @@ Reglas obligatorias:
         this.bot.command("positions", async (ctx) => {
             const positions = await this.exchangeService.getOpenPositionsFutures();
             const futu = await this.exchangeService.getFuturesData("BTC/USDT")
-            ctx.reply(`${JSON.stringify(futu.price)}`)
+            ctx.reply(`${JSON.stringify(positions)}`)
         })
 
         //saber si sigue siendo buena la operacion, tambien para automatizar
