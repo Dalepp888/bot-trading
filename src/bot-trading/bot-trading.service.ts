@@ -302,7 +302,7 @@ Reglas obligatorias:
                     orderData.takeProfit
                 );*/}
 
-                ctx.reply(`✅ Orden ejecutada: ${JSON.stringify(order, null, 2)}.
+                ctx.reply(`✅ Orden ejecutada: ${JSON.stringify(orderData)}.
                 Respuesta de Gemini: ${JSON.stringify(response.text)}`);
 
             } catch (err) {
