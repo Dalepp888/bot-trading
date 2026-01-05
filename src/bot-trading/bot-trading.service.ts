@@ -21,121 +21,210 @@ export class BotTradingService implements OnModuleInit {
 
     //esta funcion es para automatizar
     async futuresOperation() {
-        if (Object.keys(this.operation).length === 0) {
-            const data = await this.exchangeService.getOhlcv("BTC/USDT", "15m", Date.now() - 60 * 60 * 1000, 60);
-            const datain = await this.exchangeService.getTicker("BTC/USDT");
-            //const my = await this.exchangeService.getBalance();
-            //const data = await this.paperFuturesService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
-            //const datain = await this.paperFuturesService.getTicker("BTC/USDT");
-            const my = await this.paperFuturesService.getBalance();
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-            const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
-                contents: `
-    Analiza cuidadosamente la siguiente información:
+        const chat_id = process.env.CHAT_ID!
+        const data = {
+            higherTF: await this.exchangeService.getOhlcv(
+                "BTC/USDT",
+                "15m",
+                Date.now() - 6 * 60 * 60 * 1000, // 6 horas
+                48
+            ),
+            entryTF: await this.exchangeService.getOhlcv(
+                "BTC/USDT",
+                "3m",
+                Date.now() - 90 * 60 * 1000, // 1.5 horas
+                30
+            )
+        }
+        const datain = await this.exchangeService.getTicker("BTC/USDT");
+        const my = await this.exchangeService.getBalance();
+        //const data = await this.paperFuturesService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
+        //const datain = await this.paperFuturesService.getTicker("BTC/USDT");
+        //const my = await this.paperFuturesService.getBalance();
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const response = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: `
+         Analiza cuidadosamente la siguiente información:
 
 Balance actual: ${JSON.stringify(my)}
 Histórico reciente del mercado: ${JSON.stringify(data)}
 Precio actual: ${JSON.stringify(datain)}
 
-Tu tarea es abrir una operación de trading de futuros usando un estilo de 
-“micro-swing intradía”, con duración esperada entre 10 y 40 minutos. 
-Busco entradas moderadas, movimientos más amplios que el scalping, 
-y una gestión de riesgo equilibrada.
+Tu tarea es decidir si existe una OPORTUNIDAD REAL DE TRADING EN FUTUROS LINEALES.
 
-Devuélveme UNICAMENTE un objeto JSON VÁLIDO.
+Debes basar tu decisión ÚNICAMENTE en estas estrategias profesionales:
+
+1) Extensiones de Fibonacci
+
+   -Identifica impulsos claros y correcciones válidas.
+
+   -Usa extensiones (61.8%, 100%, 161.8%) como objetivos de continuación.
+
+   -NO operar si el precio está cerca de una extensión relevante sin confirmación.
+
+2)Estrategia de ruptura (Breakout)
+
+   -Opera SOLO rupturas limpias de soporte o resistencia.
+
+   -Debe existir consolidación previa y ruptura con intención clara.
+
+   -Evita rupturas falsas, mechas largas o falta de continuidad.
+
+3)Detección de cambios de tendencia
+
+   -Analiza estructura de mercado (máximos y mínimos).
+
+   -Detecta agotamiento de tendencia, fallos en continuación o reversión confirmada.
+
+   -NO operar si el mercado está en transición confusa o sin dirección clara.
+
+⚠️ Es OBLIGATORIO NO OPERAR si ocurre cualquiera de estos casos:
+
+    -Precio cerca de techos o pisos recientes relevantes
+
+    -Mercado en rango lateral sin ruptura válida
+
+    -Movimiento fuerte previo con señales claras de agotamiento
+
+    -Falta de confirmación estructural o técnica
+
+    -Riesgo elevado o escenario ambiguo
+
+La preservación de capital es PRIORIDAD ABSOLUTA.
+NO fuerces operaciones.
+Si no hay ventaja clara, NO OPERES.
+
+Devuélveme ÚNICAMENTE un objeto JSON VÁLIDO.
 No incluyas texto adicional.
 No incluyas explicaciones.
 No incluyas comentarios.
 No incluyas Markdown.
-NO agregues comillas fuera del JSON.
-NO agregues caracteres antes o después del JSON.
-El mensaje debe contener SOLO el objeto JSON EXACTAMENTE con este formato:
+No agregues caracteres fuera del JSON.
+
+El formato debe ser EXACTAMENTE este:
 
 {
   "symbol": "BTC/USDT",
-  "side": "buy" or "sell",
+  "side": "buy" or "sell" or "none",
   "amount": number,
   "leverage": number,
   "price": number,
-  "type": "market" or "limit",
+  "type": "market",
   "stopLoss": number,
   "takeProfit": number
 }
 
-Reglas obligatorias:
+REGLAS OBLIGATORIAS
 
-1. Si "type" es "market", "price" debe ser SIEMPRE el precio actual.
-2. "amount" debe ser positivo y NUNCA mayor que (balance disponible / precio actual).
-3. Usa un amount pequeño y seguro adecuado para micro-swing intradía.
-4. "leverage" entre 1 y 5, preferiblemente valores moderados (2–4).
-5. La pérdida máxima si se ejecuta el stopLoss NO DEBE superar el 0.3% del balance total.
-6. NO uses null, strings innecesarios o valores no numéricos.
-7. Devuelve solo el JSON. Nada más fuera de él.     
+1)Si decides NO operar:
+
+  -"side" debe ser "none"
+
+  -"amount" = 0
+
+  -"leverage" = 0
+
+  -"price", "stopLoss" y "takeProfit" deben ser el precio actual
+
+  -Incluye una explicación del porqué SOLO si decides no operar, dentro del JSON como texto adicional permitido por el sistema
+
+2)Si "type" es "market", "price" debe ser SIEMPRE el precio actual.
+
+3)"amount" debe ser pequeño, conservador y NUNCA mayor que
+(balance disponible / precio actual).
+
+4)"leverage" permitido entre 1 y 4.
+Prioriza 2–3.
+
+5)StopLoss y TakeProfit quedan a tu criterio técnico, pero deben ser coherentes con:
+
+  -La estructura del mercado
+
+  -Fibonacci
+
+  -Ruptura o cambio de tendencia
+
+6)La pérdida máxima si se ejecuta el StopLoss NO debe superar el 0.3% del balance total.
+
+7)Si el escenario es dudoso, peligroso o poco claro:
+
+  -DEBES devolver "side": "none".
+
+8)Devuelve SOLO el JSON. Nada más.
   `,
-            });
-            console.log(response.text);
-            const text = response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-            if (!text) {
-                console.log("⚠️ No se recibió texto válido de Gemini.");
+        });
+        console.log(response.text);
+        const text = response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (!text) {
+            await this.bot.telegram.sendMessage(chat_id, "⚠️ No se recibió texto válido de Gemini.");
+            return;
+        }
+        try {
+            const orderData: {
+                symbol: string;
+                side: 'buy' | 'sell';
+                amount: number;
+                leverage: number;
+                price: number | null;
+                type: 'market' | 'limit';
+                stopLoss: number;
+                takeProfit: number;
+            } = JSON.parse(text);
+
+            if (orderData.amount === 0) {
+                await this.bot.telegram.sendMessage(chat_id, `No veo oportunidad clara: ${JSON.stringify(orderData)}`);
                 return;
             }
-            try {
-                const orderData: {
-                    symbol: string;
-                    side: 'buy' | 'sell';
-                    amount: number;
-                    leverage: number;
-                    price: number | null;
-                    type: 'market' | 'limit';
-                    stopLoss: number;
-                    takeProfit: number;
-                } = JSON.parse(text);
 
-                if (orderData.symbol === 'BTC/USDT') {
-                    orderData.symbol = 'BTCUSDT';
-                }
+            if (orderData.symbol === 'BTC/USDT') {
+                orderData.symbol = 'BTCUSDT';
+            }
 
-                this.operation = orderData
+            this.operation = orderData
 
-                {/*const order = await this.exchangeService.placeFuturesOrder(
+            {/*const order = await this.exchangeService.placeFuturesOrder(
                     orderData.symbol,
                     orderData.side,
                     orderData.amount,
                     orderData.leverage,
-                    orderData.price ? orderData.price : undefined,
-                    orderData.type
-                );*/}
-
-                const order = await this.paperFuturesService.placeFuturesOrder(
-                    orderData.symbol,
-                    orderData.side,
-                    orderData.amount,
-                    orderData.leverage,
-                    orderData.price ? orderData.price : undefined,
-                    orderData.type,
                     orderData.stopLoss,
                     orderData.takeProfit
-                );
+                );*/}
 
-                console.log(`✅ Orden ejecutada: ${JSON.stringify(order, null, 2)}.
+            const order = await this.paperFuturesService.placeFuturesOrder(
+                orderData.symbol,
+                orderData.side,
+                orderData.amount,
+                orderData.leverage,
+                orderData.stopLoss,
+                orderData.takeProfit
+            );
+
+            await this.bot.telegram.sendMessage(chat_id, `✅ Orden ejecutada: ${JSON.stringify(orderData)}.
                 Respuesta de Gemini: ${JSON.stringify(response.text)}`);
 
-            } catch (err) {
-                console.error("Error al procesar respuesta de Gemini:", err);
+        } catch (err: any) {
+            if (err.status === 429) {
+                console.warn("Limite de cuota excedido", err)
+                await this.bot.telegram.sendMessage(
+                    chat_id,
+                    "⚠️ Límite de peticiones de Gemini alcanzado. Espera antes de hacer otra consulta."
+                );
             }
+            console.error("Error al procesar respuesta de Gemini:", err);
+            await this.bot.telegram.sendMessage(chat_id, "⚠️ Hubo un error al procesar la respuesta de Gemini.");
         }
     }
 
-    /*@Cron('* * * * *')
+    @Cron('*/10 * * * *')
     async handleCron() {
-
         const chat_id = process.env.CHAT_ID!
         let jaja = "BTC/USDT"
 
         await this.futuresOperation()
 
-    }*/
+    }
 
     async onModuleInit() {
         this.bot.start((ctx) => ctx.reply("Welcome to Bot Trading!."));
@@ -194,7 +283,21 @@ Pequeños retrocesos o laterales NO invalidan la operación.
 
         //abrir cuenta en futuros
         this.bot.command("IaGemini", async (ctx) => {
-            const data = await this.exchangeService.getOhlcv("BTC/USDT", "3m", Date.now() - 60 * 60 * 1000, 20);
+            const chat_id = process.env.CHAT_ID!
+            const data = {
+                higherTF: await this.exchangeService.getOhlcv(
+                    "BTC/USDT",
+                    "15m",
+                    Date.now() - 6 * 60 * 60 * 1000, // 6 horas
+                    48
+                ),
+                entryTF: await this.exchangeService.getOhlcv(
+                    "BTC/USDT",
+                    "3m",
+                    Date.now() - 90 * 60 * 1000, // 1.5 horas
+                    30
+                )
+            }
             const datain = await this.exchangeService.getTicker("BTC/USDT");
             const my = await this.exchangeService.getBalance();
             //const data = await this.paperFuturesService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
@@ -210,52 +313,107 @@ Balance actual: ${JSON.stringify(my)}
 Histórico reciente del mercado: ${JSON.stringify(data)}
 Precio actual: ${JSON.stringify(datain)}
 
-Tu tarea es abrir una operación de trading de futuros usando un estilo de
-“micro-scalping intradía”, con duración esperada entre 5 y 15 minutos.
+Tu tarea es decidir si existe una OPORTUNIDAD REAL DE TRADING EN FUTUROS LINEALES.
 
-Busco operaciones de corta duración, con movimientos pequeños y controlados,
-NO swings amplios.
-La prioridad es preservar capital, ganar poco pero de forma consistente,
-y cerrar la operación rápidamente.
+Debes basar tu decisión ÚNICAMENTE en estas estrategias profesionales:
 
-Los niveles de stopLoss y takeProfit deben ser CERCANOS al precio de entrada,
-adecuados para movimientos cortos de 5–15 minutos.
+1) Extensiones de Fibonacci
 
-Devuélveme UNICAMENTE un objeto JSON VÁLIDO.
+   -Identifica impulsos claros y correcciones válidas.
+
+   -Usa extensiones (61.8%, 100%, 161.8%) como objetivos de continuación.
+
+   -NO operar si el precio está cerca de una extensión relevante sin confirmación.
+
+2)Estrategia de ruptura (Breakout)
+
+   -Opera SOLO rupturas limpias de soporte o resistencia.
+
+   -Debe existir consolidación previa y ruptura con intención clara.
+
+   -Evita rupturas falsas, mechas largas o falta de continuidad.
+
+3)Detección de cambios de tendencia
+
+   -Analiza estructura de mercado (máximos y mínimos).
+
+   -Detecta agotamiento de tendencia, fallos en continuación o reversión confirmada.
+
+   -NO operar si el mercado está en transición confusa o sin dirección clara.
+
+⚠️ Es OBLIGATORIO NO OPERAR si ocurre cualquiera de estos casos:
+
+    -Precio cerca de techos o pisos recientes relevantes
+
+    -Mercado en rango lateral sin ruptura válida
+
+    -Movimiento fuerte previo con señales claras de agotamiento
+
+    -Falta de confirmación estructural o técnica
+
+    -Riesgo elevado o escenario ambiguo
+
+La preservación de capital es PRIORIDAD ABSOLUTA.
+NO fuerces operaciones.
+Si no hay ventaja clara, NO OPERES.
+
+Devuélveme ÚNICAMENTE un objeto JSON VÁLIDO.
 No incluyas texto adicional.
 No incluyas explicaciones.
 No incluyas comentarios.
 No incluyas Markdown.
-NO agregues comillas fuera del JSON.
-NO agregues caracteres antes o después del JSON.
-El mensaje debe contener SOLO el objeto JSON EXACTAMENTE con este formato:
+No agregues caracteres fuera del JSON.
+
+El formato debe ser EXACTAMENTE este:
 
 {
   "symbol": "BTC/USDT",
-  "side": "buy" or "sell",
+  "side": "buy" or "sell" or "none",
   "amount": number,
   "leverage": number,
   "price": number,
-  "type": "market" or "limit",
+  "type": "market",
   "stopLoss": number,
   "takeProfit": number
 }
 
-Reglas obligatorias:
+REGLAS OBLIGATORIAS
 
-1. Si "type" es "market", "price" debe ser SIEMPRE el precio actual.
-2. "amount" debe ser positivo y NUNCA mayor que (balance disponible / precio actual).
-3. Usa un amount pequeño y seguro adecuado para micro-swing intradía.
-4. "leverage" entre 1 y 5, preferiblemente valores moderados (2–4).
-5. "stopLoss" y "takeProfit" deben reflejar micro-swing intradía:
-   - Distancias mayores que scalping pero sin excesos.
-   - Relación riesgo/beneficio positiva.
-6. NO uses null, strings innecesarios o valores no numéricos.
-7. Devuelve solo el JSON. Nada más fuera de él.
-8. La pérdida máxima si se ejecuta el stopLoss NO DEBE superar el 0.3% del balance total.
-9. El stopLoss debe estar entre 0.1% y 0.25% del precio de entrada.
-10. El takeProfit debe estar entre 0.15% y 0.4% del precio de entrada.
-11. La duración estimada de la operación NO debe superar 15 minutos.
+1)Si decides NO operar:
+
+  -"side" debe ser "none"
+
+  -"amount" = 0
+
+  -"leverage" = 0
+
+  -"price", "stopLoss" y "takeProfit" deben ser el precio actual
+
+  -Incluye una explicación del porqué SOLO si decides no operar, dentro del JSON como texto adicional permitido por el sistema
+
+2)Si "type" es "market", "price" debe ser SIEMPRE el precio actual.
+
+3)"amount" debe ser pequeño, conservador y NUNCA mayor que
+(balance disponible / precio actual).
+
+4)"leverage" permitido entre 1 y 4.
+Prioriza 2–3.
+
+5)StopLoss y TakeProfit quedan a tu criterio técnico, pero deben ser coherentes con:
+
+  -La estructura del mercado
+
+  -Fibonacci
+
+  -Ruptura o cambio de tendencia
+
+6)La pérdida máxima si se ejecuta el StopLoss NO debe superar el 0.3% del balance total.
+
+7)Si el escenario es dudoso, peligroso o poco claro:
+
+  -DEBES devolver "side": "none".
+
+8)Devuelve SOLO el JSON. Nada más.
   `,
             });
             console.log(response.text);
@@ -276,13 +434,27 @@ Reglas obligatorias:
                     takeProfit: number;
                 } = JSON.parse(text);
 
+                if (orderData.amount === 0) {
+                    ctx.reply(`No veo oportunidad clara: ${JSON.stringify(orderData)}`);
+                    return;
+                }
+
                 if (orderData.symbol === 'BTC/USDT') {
                     orderData.symbol = 'BTCUSDT';
                 }
 
                 this.operation = orderData
 
-                const order = await this.exchangeService.placeFuturesOrder(
+                {/*const order = await this.exchangeService.placeFuturesOrder(
+                    orderData.symbol,
+                    orderData.side,
+                    orderData.amount,
+                    orderData.leverage,
+                    orderData.stopLoss,
+                    orderData.takeProfit
+                );*/}
+
+                const order = await this.paperFuturesService.placeFuturesOrder(
                     orderData.symbol,
                     orderData.side,
                     orderData.amount,
@@ -291,21 +463,25 @@ Reglas obligatorias:
                     orderData.takeProfit
                 );
 
-                {/*const order = await this.paperFuturesService.placeFuturesOrder(
-                    orderData.symbol,
-                    orderData.side,
-                    orderData.amount,
-                    orderData.leverage,
-                    orderData.price ? orderData.price : undefined,
-                    orderData.type,
-                    orderData.stopLoss,
-                    orderData.takeProfit
-                );*/}
-
                 ctx.reply(`✅ Orden ejecutada: ${JSON.stringify(orderData)}.
                 Respuesta de Gemini: ${JSON.stringify(response.text)}`);
 
-            } catch (err) {
+            } catch (err: any) {
+
+                if (
+                    (err?.status === 429) ||
+                    (err?.error?.code === 429) ||
+                    (err?.error?.status === "RESOURCE_EXHAUSTED")
+                ) {
+                    console.warn("⚠️ Límite de cuota Gemini alcanzado");
+
+                    await this.bot.telegram.sendMessage(
+                        chat_id,
+                        "⚠️ Límite de peticiones de Gemini alcanzado. Espera unos segundos antes de volver a intentarlo."
+                    );
+
+                    return
+                }
                 console.error("Error al procesar respuesta de Gemini:", err);
                 ctx.reply("⚠️ Hubo un error al procesar la respuesta de Gemini.");
             }

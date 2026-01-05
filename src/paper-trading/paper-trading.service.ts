@@ -26,7 +26,6 @@ export class PaperFuturesService {
         amount: number,
         leverage: number,
         price?: number,
-        type?: 'market' | 'limit', 
         stopLoss?: number, 
         takeProfit?: number
     ) {
@@ -51,7 +50,7 @@ export class PaperFuturesService {
             amount,
             leverage,
             price: executionPrice,
-            type: type || 'market', 
+            type: 'market', 
             stopLoss, 
             takeProfit
         };
