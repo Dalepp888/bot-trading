@@ -45,7 +45,7 @@ export class BotTradingService implements OnModuleInit {
         const response = await ai.models.generateContent({
             model: "gemini-3-flash-preview",
             contents: `
-         Analiza cuidadosamente la siguiente información:
+        Analiza cuidadosamente la siguiente información:
 
 Balance actual: ${JSON.stringify(my)}
 Histórico reciente del mercado: ${JSON.stringify(data)}
@@ -57,39 +57,63 @@ Debes basar tu decisión ÚNICAMENTE en estas estrategias profesionales:
 
 1) Extensiones de Fibonacci
 
-   -Identifica impulsos claros y correcciones válidas.
+   - Identifica impulsos claros y correcciones válidas.
+   - Usa extensiones (61.8%, 100%, 161.8%) como objetivos de continuación.
+   - Evita operar si el precio está cerca de una extensión relevante a menos
+     que haya confirmación técnica (retest claro, volumen o momentum que valide la continuación).
 
-   -Usa extensiones (61.8%, 100%, 161.8%) como objetivos de continuación.
+2) Estrategia de ruptura (Breakout)
 
-   -NO operar si el precio está cerca de una extensión relevante sin confirmación.
+   - Opera preferiblemente rupturas limpias de soporte o resistencia.
+   - Debe existir consolidación previa y ruptura con intención clara.
+   - También puedes aceptar rupturas “menores” (breakouts de marcos temporales
+     inferiores o rompimientos débiles) solo si hay confirmación adicional:
+     aumento de volumen, cierre por encima/por debajo del nivel en la vela de confirmación,
+     o retest exitoso del nivel roto.
+   - Evita rupturas falsas, mechas largas o falta de continuidad si no hay confirmación.
 
-2)Estrategia de ruptura (Breakout)
+3) Detección de cambios de tendencia
 
-   -Opera SOLO rupturas limpias de soporte o resistencia.
+   - Analiza estructura de mercado (máximos y mínimos).
+   - Detecta agotamiento de tendencia, fallos en continuación o reversión confirmada.
+   - Puedes anticipar una entrada con confirmación de momentum o indicadores
+     si la estructura sugiere que la reversión está en curso.
+   - NO operar si el mercado está en transición confusa o sin dirección clara,
+     salvo confirmación fuerte (estructura + momentum o volumen).
 
-   -Debe existir consolidación previa y ruptura con intención clara.
+4) Trading de rango lateral (rebotes en soporte y resistencia)
 
-   -Evita rupturas falsas, mechas largas o falta de continuidad.
+   - Identifica rangos laterales claros con soporte y resistencia bien definidos.
+   - Opera rebotes técnicos:
+     * BUY cerca del soporte
+     * SELL cerca de la resistencia
+   - La entrada SOLO es válida si existe confirmación:
+     vela de rechazo clara, agotamiento del movimiento o señal de reversión.
+   - NO operar en la zona media del rango.
+   - El StopLoss debe colocarse fuera del rango, más allá del soporte o resistencia.
+   - El TakeProfit debe apuntar hacia el extremo opuesto del rango
+     o a una zona intermedia con relación riesgo/beneficio positiva.
 
-3)Detección de cambios de tendencia
+5) Falsas rupturas (Fake Breakout / Failure)
 
-   -Analiza estructura de mercado (máximos y mínimos).
+   - Identifica intentos de ruptura que fallan:
+     * mechas largas
+     * falta de cierre sólido fuera del nivel
+     * ruptura sin volumen o sin continuidad
+   - Opera en sentido contrario SOLO cuando el precio regresa al rango
+     y confirma rechazo del nivel roto.
+   - El StopLoss debe ir más allá del extremo de la falsa ruptura.
+   - El TakeProfit debe apuntar al interior del rango o al nivel opuesto.
 
-   -Detecta agotamiento de tendencia, fallos en continuación o reversión confirmada.
+⚠️ Es OBLIGATORIO evitar o no operar en los siguientes escenarios,
+SALVO que alguna de las estrategias anteriores tenga confirmación técnica clara:
 
-   -NO operar si el mercado está en transición confusa o sin dirección clara.
-
-⚠️ Es OBLIGATORIO NO OPERAR si ocurre cualquiera de estos casos:
-
-    -Precio cerca de techos o pisos recientes relevantes
-
-    -Mercado en rango lateral sin ruptura válida
-
-    -Movimiento fuerte previo con señales claras de agotamiento
-
-    -Falta de confirmación estructural o técnica
-
-    -Riesgo elevado o escenario ambiguo
+   - Precio extremadamente cercano a techos o pisos relevantes sin señal de rechazo.
+   - Mercado lateral SIN estructura clara de rango.
+   - Movimiento fuerte previo con señales claras de agotamiento,
+     sin confirmación de reversión o continuación.
+   - Falta de confirmación estructural o técnica.
+   - Riesgo elevado o escenario ambiguo.
 
 La preservación de capital es PRIORIDAD ABSOLUTA.
 NO fuerces operaciones.
@@ -117,41 +141,39 @@ El formato debe ser EXACTAMENTE este:
 
 REGLAS OBLIGATORIAS
 
-1)Si decides NO operar:
+1) Si decides NO operar:
+   - "side" debe ser "none"
+   - "amount" = 0
+   - "leverage" = 0
+   - "price", "stopLoss" y "takeProfit" deben ser el precio actual
+   - Incluye una explicación del porqué SOLO si decides no operar,
+     dentro del JSON como texto adicional permitido por el sistema
 
-  -"side" debe ser "none"
+2) Si "type" es "market", "price" debe ser SIEMPRE el precio actual.
 
-  -"amount" = 0
+3) "amount" debe ser pequeño, conservador y NUNCA mayor que
+   (balance disponible / precio actual).
 
-  -"leverage" = 0
+4) "leverage" permitido entre 1 y 4.
+   Prioriza 2–3.
 
-  -"price", "stopLoss" y "takeProfit" deben ser el precio actual
+5) StopLoss y TakeProfit deben definirse de forma técnica y realista,
+   coherentes con:
+   - La estructura del mercado (máximos/mínimos)
+   - Extensiones o retrocesos de Fibonacci relevantes
+   - Niveles de ruptura, rebote o confirmación de cambio de tendencia
+   - El StopLoss debe colocarse fuera del ruido del mercado,
+     permitiendo la volatilidad normal del marco temporal.
+   - El TakeProfit debe garantizar una relación riesgo/beneficio positiva
+     mínima de 1:1.3, preferiblemente 1:1.5 o superior.
 
-  -Incluye una explicación del porqué SOLO si decides no operar, dentro del JSON como texto adicional permitido por el sistema
+6) La pérdida máxima si se ejecuta el StopLoss
+   NO debe superar el 0.75% del balance total.
 
-2)Si "type" es "market", "price" debe ser SIEMPRE el precio actual.
+7) Si el escenario es dudoso, peligroso o poco claro:
+   - DEBES devolver "side": "none".
 
-3)"amount" debe ser pequeño, conservador y NUNCA mayor que
-(balance disponible / precio actual).
-
-4)"leverage" permitido entre 1 y 4.
-Prioriza 2–3.
-
-5)StopLoss y TakeProfit quedan a tu criterio técnico, pero deben ser coherentes con:
-
-  -La estructura del mercado
-
-  -Fibonacci
-
-  -Ruptura o cambio de tendencia
-
-6)La pérdida máxima si se ejecuta el StopLoss NO debe superar el 0.3% del balance total.
-
-7)Si el escenario es dudoso, peligroso o poco claro:
-
-  -DEBES devolver "side": "none".
-
-8)Devuelve SOLO el JSON. Nada más.
+8) Devuelve SOLO el JSON. Nada más.
   `,
         });
         console.log(response.text);
@@ -205,12 +227,11 @@ Prioriza 2–3.
                 Respuesta de Gemini: ${JSON.stringify(response.text)}`);
 
         } catch (err: any) {
-            if (err.status === 429) {
-                console.warn("Limite de cuota excedido", err)
-                await this.bot.telegram.sendMessage(
-                    chat_id,
-                    "⚠️ Límite de peticiones de Gemini alcanzado. Espera antes de hacer otra consulta."
-                );
+            const msg = err.message || '';
+
+            if (msg.includes('not available during funding fee settlement')) {
+                console.warn('⚠️ CoinEx settlement activo. Saltando esta ejecución.');
+                await this.bot.telegram.sendMessage(chat_id, "⚠️ CoinEx settlement activo. Saltando esta ejecución.");
             }
             console.error("Error al procesar respuesta de Gemini:", err);
             await this.bot.telegram.sendMessage(chat_id, "⚠️ Hubo un error al procesar la respuesta de Gemini.");
