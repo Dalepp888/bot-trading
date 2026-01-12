@@ -45,135 +45,186 @@ export class BotTradingService implements OnModuleInit {
         const response = await ai.models.generateContent({
             model: "gemini-3-flash-preview",
             contents: `
-        Analiza cuidadosamente la siguiente información:
+        Actúa como un trader profesional de futuros especializado en scalping intradía. 
+        Lee exactamente los datos que te doy y decide si existe una OPORTUNIDAD REAL para 
+        abrir una operación de futuros lineales que pueda cerrarse en 15 minutos o menos. 
+        Si no hay oportunidad real, devuelve la señal de NO OPERAR (side = "none") junto 
+        con una explicación solo en ese caso.
+
+Entradas (sustituye estas variables en la llamada API tal como las recibes):
 
 Balance actual: ${JSON.stringify(my)}
+
 Histórico reciente del mercado: ${JSON.stringify(data)}
+
 Precio actual: ${JSON.stringify(datain)}
 
-Tu tarea es decidir si existe una OPORTUNIDAD REAL DE TRADING EN FUTUROS LINEALES.
+La operativa es EXCLUSIVAMENTE de tipo SCALPING INTRADÍA con duración máxima 15 minutos.
+CONDICIÓN OBLIGATORIA DE TIEMPO:
 
-Debes basar tu decisión ÚNICAMENTE en estas estrategias profesionales:
+Cada operación debe ser alcanzable dentro de 15 minutos.
 
-1) Extensiones de Fibonacci
+Si estimas que el TakeProfit no puede alcanzarse en ese horizonte, NO OPERAR.
 
-   - Identifica impulsos claros y correcciones válidas.
-   - Usa extensiones (61.8%, 100%, 161.8%) como objetivos de continuación.
-   - Evita operar si el precio está cerca de una extensión relevante a menos
-     que haya confirmación técnica (retest claro, volumen o momentum que valide la continuación).
+Entradas, SL y TP deben ser coherentes con movimientos de muy corto plazo (1m–5m principalmente).
 
-2) Estrategia de ruptura (Breakout)
+Debes basar tu decisión ÚNICAMENTE en estas estrategias profesionales (no añadas ni sustituyas 
+estrategias):
 
-   - Opera preferiblemente rupturas limpias de soporte o resistencia.
-   - Debe existir consolidación previa y ruptura con intención clara.
-   - También puedes aceptar rupturas “menores” (breakouts de marcos temporales
-     inferiores o rompimientos débiles) solo si hay confirmación adicional:
-     aumento de volumen, cierre por encima/por debajo del nivel en la vela de confirmación,
-     o retest exitoso del nivel roto.
-   - Evita rupturas falsas, mechas largas o falta de continuidad si no hay confirmación.
+Extensiones de Fibonacci
 
-3) Detección de cambios de tendencia
+-Identifica impulsos claros y correcciones válidas.
+-Usa extensiones (61.8%, 100%, 161.8%) como objetivos de continuación.
+-Evita operar si el precio está cerca de una extensión relevante a menos
+que haya confirmación técnica (retest claro, volumen o momentum que valide la continuación).
 
-   - Analiza estructura de mercado (máximos y mínimos).
-   - Detecta agotamiento de tendencia, fallos en continuación o reversión confirmada.
-   - Puedes anticipar una entrada con confirmación de momentum o indicadores
-     si la estructura sugiere que la reversión está en curso.
-   - NO operar si el mercado está en transición confusa o sin dirección clara,
-     salvo confirmación fuerte (estructura + momentum o volumen).
+Estrategia de ruptura (Breakout)
 
-4) Trading de rango lateral (rebotes en soporte y resistencia)
+Opera preferiblemente rupturas limpias de soporte o resistencia.
 
-   - Identifica rangos laterales claros con soporte y resistencia bien definidos.
-   - Opera rebotes técnicos:
-     * BUY cerca del soporte
-     * SELL cerca de la resistencia
-   - La entrada SOLO es válida si existe confirmación:
-     vela de rechazo clara, agotamiento del movimiento o señal de reversión.
-   - NO operar en la zona media del rango.
-   - El StopLoss debe colocarse fuera del rango, más allá del soporte o resistencia.
-   - El TakeProfit debe apuntar hacia el extremo opuesto del rango
-     o a una zona intermedia con relación riesgo/beneficio positiva.
+Debe existir consolidación previa y ruptura con intención clara.
 
-5) Falsas rupturas (Fake Breakout / Failure)
+También puedes aceptar rupturas “menores” (breakouts de marcos temporales
+inferiores o rompimientos débiles) solo si hay confirmación adicional — por ejemplo:
+aumento de volumen, cierre por encima/por debajo del nivel en la vela de confirmación,
+o retest exitoso del nivel roto.
 
-   - Identifica intentos de ruptura que fallan:
-     * mechas largas
-     * falta de cierre sólido fuera del nivel
-     * ruptura sin volumen o sin continuidad
-   - Opera en sentido contrario SOLO cuando el precio regresa al rango
-     y confirma rechazo del nivel roto.
-   - El StopLoss debe ir más allá del extremo de la falsa ruptura.
-   - El TakeProfit debe apuntar al interior del rango o al nivel opuesto.
+Evita rupturas falsas, mechas largas o falta de continuidad si no hay confirmación.
 
-⚠️ Es OBLIGATORIO evitar o no operar en los siguientes escenarios,
-SALVO que alguna de las estrategias anteriores tenga confirmación técnica clara:
+Detección de cambios de tendencia
 
-   - Precio extremadamente cercano a techos o pisos relevantes sin señal de rechazo.
-   - Mercado lateral SIN estructura clara de rango.
-   - Movimiento fuerte previo con señales claras de agotamiento,
-     sin confirmación de reversión o continuación.
-   - Falta de confirmación estructural o técnica.
-   - Riesgo elevado o escenario ambiguo.
+Analiza estructura de mercado (máximos y mínimos).
 
-La preservación de capital es PRIORIDAD ABSOLUTA.
-NO fuerces operaciones.
-Si no hay ventaja clara, NO OPERES.
+Detecta agotamiento de tendencia, fallos en continuación o reversión confirmada.
 
-Devuélveme ÚNICAMENTE un objeto JSON VÁLIDO.
-No incluyas texto adicional.
-No incluyas explicaciones.
-No incluyas comentarios.
-No incluyas Markdown.
-No agregues caracteres fuera del JSON.
+Puedes anticipar una entrada con confirmación de momentum o indicadores
+si la estructura sugiere que la reversión está en curso.
 
-El formato debe ser EXACTAMENTE este:
+NO operar si el mercado está en transición confusa o sin dirección clara,
+salvo confirmación fuerte (estructura + momentum o volumen).
+
+Trading de rango lateral (rebotes en soporte y resistencia)
+
+Identifica rangos laterales claros con soporte y resistencia bien definidos.
+
+Opera rebotes técnicos:
+
+BUY cerca del soporte
+
+SELL cerca de la resistencia
+
+La entrada SOLO es válida si existe confirmación:
+vela de rechazo clara, agotamiento del movimiento o señal de reversión.
+
+NO operar en la zona media del rango.
+
+El StopLoss debe colocarse fuera del rango, más allá del soporte o resistencia.
+
+El TakeProfit debe apuntar hacia el extremo opuesto del rango
+o a una zona intermedia con relación riesgo/beneficio positiva.
+
+Falsas rupturas (Fake Breakout / Failure)
+
+Identifica intentos de ruptura que fallan:
+
+mechas largas
+
+falta de cierre sólido fuera del nivel
+
+ruptura sin volumen o sin continuidad
+
+Opera en sentido contrario SOLO cuando el precio regresa al rango
+y confirma rechazo del nivel roto.
+
+El StopLoss debe ir más allá del extremo de la falsa ruptura.
+
+El TakeProfit debe apuntar al interior del rango o al nivel opuesto.
+
+⚠️ Es OBLIGATORIO NO OPERAR si ocurre cualquiera de estos casos (salvo confirmación técnica clara):
+
+Precio extremadamente cercano a techos o pisos relevantes sin señal de rechazo.
+
+Mercado sin estructura clara de rango (lateral sin niveles definidos).
+
+Movimiento fuerte previo con señales de agotamiento sin confirmación.
+
+Falta de confirmación técnica (volumen, cierre, retest, estructura).
+
+Riesgo elevado o escenario ambiguo.
+
+Salida esperada (obligatoria y única): DEVUÉLVEME SÓLO un objeto JSON VÁLIDO 
+exactamente con este formato:
 
 {
-  "symbol": "BTC/USDT",
-  "side": "buy" or "sell" or "none",
-  "amount": number,
-  "leverage": number,
-  "price": number,
-  "type": "market",
-  "stopLoss": number,
-  "takeProfit": number
+"symbol": "BTC/USDT",
+"side": "buy" or "sell" or "none",
+"amount": number,
+"leverage": number,
+"price": number,
+"type": "market",
+"stopLoss": number,
+"takeProfit": number
 }
 
-REGLAS OBLIGATORIAS
+Reglas obligatorias y validaciones (el modelo debe aplicar antes de devolver el JSON):
 
-1) Si decides NO operar:
-   - "side" debe ser "none"
-   - "amount" = 0
-   - "leverage" = 0
-   - "price", "stopLoss" y "takeProfit" deben ser el precio actual
-   - Incluye una explicación del porqué SOLO si decides no operar,
-     dentro del JSON como texto adicional permitido por el sistema
+Si decides NO operar:
 
-2) Si "type" es "market", "price" debe ser SIEMPRE el precio actual.
+"side" = "none"
 
-3) "amount" debe ser pequeño, conservador y NUNCA mayor que
-   (balance disponible / precio actual).
+"amount" = 0
 
-4) "leverage" permitido entre 1 y 4.
-   Prioriza 2–3.
+"leverage" = 0
 
-5) StopLoss y TakeProfit deben definirse de forma técnica y realista,
-   coherentes con:
-   - La estructura del mercado (máximos/mínimos)
-   - Extensiones o retrocesos de Fibonacci relevantes
-   - Niveles de ruptura, rebote o confirmación de cambio de tendencia
-   - El StopLoss debe colocarse fuera del ruido del mercado,
-     permitiendo la volatilidad normal del marco temporal.
-   - El TakeProfit debe garantizar una relación riesgo/beneficio positiva
-     mínima de 1:1.3, preferiblemente 1:1.5 o superior.
+"price", "stopLoss" y "takeProfit" deben ser el precio actual (numérico).
 
-6) La pérdida máxima si se ejecuta el StopLoss
-   NO debe superar el 0.75% del balance total.
+Incluye una explicación del porqué SOLO si decides no operar: añade dentro del JSON una clave extra 
+"explicacion": "texto" (solo en este caso). Fuera de ese caso no incluyas ninguna clave extra.
 
-7) Si el escenario es dudoso, peligroso o poco claro:
-   - DEBES devolver "side": "none".
+Si "type" es "market", "price" debe ser SIEMPRE el precio actual (numérico) que te pasé.
 
-8) Devuelve SOLO el JSON. Nada más.
+"amount" debe ser positivo, conservador y NUNCA mayor que (balance disponible / precio actual). 
+Devuelve número, no strings.
+
+"leverage" permitido: 1 (obligatorio).
+
+StopLoss y TakeProfit deben definirse de forma técnica y adaptada a scalping intradía (≤15 min):
+
+Basados en la estructura en marcos cortos (1m–5m): SL fuera del último máximo/mínimo relevante que 
+invalide la idea.
+
+Usa Fibonacci en marcos cortos como referencia; TP puede ubicar la siguiente extensión o nivel 
+técnico alcanzable dentro de 15 min.
+
+En rupturas: SL detrás del nivel roto; TP basado en rango y proyección breve.
+
+En rangos: SL fuera del rango; TP hacia el extremo opuesto o zona intermedia con R/R positiva.
+
+SL debe permitir la volatilidad normal del marco (no poner SL dentro del ruido).
+
+TP debe garantizar relación riesgo/beneficio mínima 1:1.5, preferible 1:2, siempre que sea alcanzable en ≤15 min.
+
+Límite de pérdida por operación: la pérdida máxima si se ejecuta el StopLoss NO debe superar 0.75% del balance 
+total. Esta regla tiene prioridad:
+
+Calcula el riesgo en USD = (precio entrada − stopLoss) * amount * (si aplica, convertir según par).
+
+Si no puedes cumplir 0.75% por la distancia técnica del SL, reducir amount hasta que cumpla, 
+o devolver "side":"none" si no es posible sin un tamaño insignificante.
+
+No amplíes el StopLoss para “dar espacio” si eso rompe el límite de riesgo.
+
+Estimación temporal: antes de proponer la orden, estima si el TP es alcanzable en ≤15 minutos con base en la velocidad del movimiento reciente (ej.: ATR/volatilidad en corto plazo). 
+Si no, NO OPERAR.
+
+Devuelve solo números en los campos numéricos, sin null, sin strings innecesarios. 
+El JSON debe poder parsearse directamente.
+
+Si decides operar, incluye únicamente el JSON señalado (sin texto adicional). Si decides no operar, incluye el JSON y la clave "explicacion" con el motivo técnico 
+(por ejemplo: "mercado lateral sin retest/volumen; techo en X; sin impulso").
+
+Comportamiento de seguridad: prioriza preservar capital; si la señal técnica choca con la regla de riesgo (0.75%), cancela la entrada. 
+No propongas órdenes basadas en noticias u otros factores fuera del histórico y precio que te di.
   `,
         });
         console.log(response.text);
