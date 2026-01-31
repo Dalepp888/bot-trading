@@ -5,6 +5,7 @@ import { ExchangeService } from "src/exchange/exchange.service";
 import { PaperFuturesService } from "src/paper-trading/paper-trading.service";
 import { Cron } from "@nestjs/schedule";
 import { loadPrompt } from "src/prompts";
+import ccxt from "ccxt";
 
 @Injectable()
 export class BotTradingService implements OnModuleInit {
@@ -41,6 +42,15 @@ export class BotTradingService implements OnModuleInit {
             }
             const datain = await this.exchangeService.getTicker("BTC/USDT");
             const my = await this.exchangeService.getBalance();
+            const orderBook = await this.exchangeService.getOrderBook("BTC/USDT", 10)
+            if (!data || !datain || !my || !orderBook) {
+                console.error("CoinEx bloqueo temporalmete la API para la liquidación del funding fee.");
+                await this.bot.telegram.sendMessage(
+                    chat_id,
+                    "⚠️ CoinEx bloqueo temporalmete la API para la liquidación del funding fee."
+                );
+                return;
+            }
             //const data = await this.paperFuturesService.getOhlcv("BTC/USDT", "1m", Date.now() - 60 * 60 * 1000, 60);
             //const datain = await this.paperFuturesService.getTicker("BTC/USDT");
             //const my = await this.paperFuturesService.getBalance();
@@ -62,12 +72,22 @@ Histórico reciente del mercado: ${JSON.stringify(data)}
 
 Precio actual: ${JSON.stringify(datain)}
 
+Order Book actual (BTC/USDT): ${JSON.stringify(orderBook)}
+
 ${prompt}
   `,
             });
             console.log("gemini 3 flash")
             console.log(response.text);
             const text = response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            if (!text) {
+                console.error("Respuesta inválida de Gemini", response);
+                await this.bot.telegram.sendMessage(
+                    chat_id,
+                    "⚠️ Gemini no devolvió una señal válida. No se opera."
+                );
+                return;
+            }
             const orderData: {
                 symbol: string;
                 side: 'buy' | 'sell';
@@ -112,8 +132,12 @@ ${prompt}
                 Respuesta de Gemini: ${JSON.stringify(response.text)}`);
         } catch (err: any) {
             if (err.status == 429) {
-                await this.bot.telegram.sendMessage(chat_id, "⚠️ gemini 3 flash fallo");
-                console.log("gemini 3 flash fallo")
+                await this.bot.telegram.sendMessage(chat_id, "⚠️ gemini 3 flash fallo code: 429");
+                console.log("gemini 3 flash fallo code: 429")
+            }
+            else if (err.status == 503) {
+                console.log("Gemini esta ocupado code: 503")
+                await this.bot.telegram.sendMessage(chat_id, "⚠️ Gemini esta ocupado code: 503")
             }
             else {
                 console.error("Error al procesar respuesta de Gemini:", err);
@@ -135,6 +159,11 @@ ${prompt}
         this.bot.start((ctx) => ctx.reply("Welcome to Bot Trading!."));
         this.bot.command('id', async (ctx) => {
             console.log((ctx.chat.id))
+        })
+
+        this.bot.command("orderbook", async (ctx) => {
+            const orderBook = await this.exchangeService.getOrderBook("BTC/USDT", 10)
+            ctx.reply(`estas son las ordenes: ${JSON.stringify(orderBook)}`)
         })
 
         //esto me dice el dinero que tengo en la cuenta

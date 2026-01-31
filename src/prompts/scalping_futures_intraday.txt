@@ -1,15 +1,3 @@
-La operativa es EXCLUSIVAMENTE de tipo SCALPING INTRADÍA con duración máxima 15 minutos.
-CONDICIÓN OBLIGATORIA DE TIEMPO:
-
-Cada operación debe ser alcanzable dentro de 15 minutos.
-
-Si estimas que el TakeProfit no puede alcanzarse en ese horizonte, NO OPERAR.
-
-Entradas, SL y TP deben ser coherentes con movimientos de muy corto plazo (1m–5m principalmente).
-
-Debes basar tu decisión ÚNICAMENTE en estas estrategias profesionales (no añadas ni sustituyas 
-estrategias):
-
 Extensiones de Fibonacci
 
 -Identifica impulsos claros y correcciones válidas.
@@ -71,6 +59,42 @@ Movimiento fuerte previo con señales de agotamiento sin confirmación.
 Falta de confirmación técnica (volumen, cierre, retest, estructura).
 
 Riesgo elevado o escenario ambiguo.
+
+IMPORTANTE — COMISIONES Y CÁLCULOS NETOS
+Antes de devolver cualquier operación (o decidir NO OPERAR), debes calcular y tener en cuenta las comisiones de trading en CoinEx y su efecto neto sobre PnL y riesgo. Considera estas reglas y fórmulas obligatorias:
+
+- Tarifas de referencia (VIP0): Maker = 0.03% (0.0003), Taker = 0.05% (0.0005).
+- Suposición de ejecución:
+  * Órdenes de mercado (apertura, SL, TP, órdenes reduceOnly) se consideran TAKER (0.05%).
+  * Órdenes limit que realmente se posteen y cierren como maker pueden usar MAKER (0.03%), pero NO asumas maker salvo que tengas evidencia clara de posteo.
+- Cálculo de comisiones (USD / USDT):
+  * comisión_apertura = precio_entrada * amount * fee_open_rate
+  * comisión_cierre = precio_salida * amount * fee_close_rate
+  * comisión_total = comisión_apertura + comisión_cierre
+
+- Cálculo del PnL neto estimado (ejemplo para BUY):
+  * pnl_gross = (precio_salida − precio_entrada) * amount
+  * pnl_net_estimado = pnl_gross − comisión_total
+  * Para SELL invierte la diferencia de precios en pnl_gross.
+
+- Cálculo de riesgo real si se ejecuta StopLoss:
+  * riesgo_posicion = (precio_entrada − precio_stop) * amount  (use valor absoluto)
+  * comisiones_si_stop = comisión_apertura + (precio_stop * amount * fee_taker)
+  * riesgo_total_en_USD = riesgo_posicion + comisiones_si_stop
+
+- Regla obligatoria de validación (aplica antes de proponer la orden):
+  * La pérdida máxima calculada **incluyendo comisiones** (riesgo_total_en_USD) NO debe superar el límite de riesgo por operación (ej.: 0.75% del balance). Si supera el límite, debes REDUCIR el `amount` hasta cumplirlo o devolver `side":"none"`.
+  * Cuando calcules relación R/R usa pnl_net_estimado (es decir, TP debe ser suficiente para que pnl_net_estimado ≥ risk_total_en_USD * R_R_min), y la relación R/R mínima (por ejemplo 1:1.5) debe cumplirse sobre valores netos (descontando comisiones).
+
+- Nota práctica: utiliza fee_open_rate = fee_taker (0.0005) para aperturas market; para cierre usa fee_taker si el cierre será market (stop/TP market) o fee_maker si el cierre será limit y tiene probabilidad razonable de hacerse como maker. Si hay duda, usa fee_taker (más conservador).
+
+Aplica estos cálculos en todos los checks (riesgo máximo, sizing de posición, verificación de R/R y decisión de operar). No devuelvas una orden que aparentemente cumple las reglas si, tras descontar comisiones, el trade deja un PnL neto negativo o rompe la restricción de pérdida máxima.
+
+“Si tras aplicar comisiones, límite de riesgo o R/R no es posible construir una orden válida de forma directa, prioriza devolver side: "none" en lugar de intentar reajustar repetidamente el amount.”
+
+“Debes SIEMPRE devolver un JSON válido. En caso de duda, ambigüedad o conflicto entre reglas, devuelve el JSON de NO OPERAR.”
+
+“No muestres ni expliques cálculos intermedios; realiza los cálculos internamente y devuelve únicamente el resultado final en el JSON.”
 
 Salida esperada (obligatoria y única): DEVUÉLVEME SÓLO un objeto JSON VÁLIDO 
 exactamente con este formato:
